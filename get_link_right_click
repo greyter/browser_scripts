@@ -1,0 +1,55 @@
+// ==UserScript==
+// @name         Copie l'URL du lien sur base d'un clic droit
+// @namespace    http://tampermonkey.net/
+// @version      2024-10-24
+// @description  Détecte les double clics droits et copie l'URL d'un lien dans le presse-papier, même si le clic est sur un élément enfant d'un lien <a>.
+// @author       You
+// @match        http://*/*
+// @match        https://*/*
+// @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    let rightClickCount = 0;
+    let clickTimeout;
+
+    document.addEventListener('contextmenu', (event) => {
+        rightClickCount++;
+
+        if (rightClickCount === 1) {
+            // Démarrer un timer pour détecter un second clic droit
+            clickTimeout = setTimeout(() => {
+                rightClickCount = 0; // Réinitialiser après 300 ms (pour un simple clic droit)
+            }, 300);
+        } else if (rightClickCount === 2) {
+            // Si deux clics droits sont détectés rapidement
+            let element = event.target;
+
+            // Remonter dans l'arborescence jusqu'à l'élément <a> s'il existe
+            while (element && element.tagName !== 'A') {
+                element = element.parentElement;
+            }
+
+            if (element && element.tagName === 'A') {
+                // Copier l'URL dans le presse-papier si l'élément trouvé est un lien <a>
+                navigator.clipboard.writeText(element.href).then(() => {
+                    console.log('URL copiée dans le presse-papier :', element.href);
+                }).catch(err => {
+                    console.error('Erreur lors de la copie dans le presse-papier', err);
+                });
+            } else {
+                console.log('Double clic droit détecté, mais aucun lien <a> trouvé.');
+            }
+
+            // Réinitialiser le compteur
+            rightClickCount = 0;
+            clearTimeout(clickTimeout);
+
+            // Empêcher l'ouverture du menu contextuel sur un double clic droit
+            event.preventDefault();
+        }
+    });
+})();
